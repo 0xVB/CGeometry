@@ -210,3 +210,9 @@ Vector2<float> Vector2<float>::Zero = Vector2<float>();
 
 template<>
 Vector2<double> Vector2<double>::Zero = Vector2<double>();
+
+template<>
+Vector2<short> Vector2<short>::Zero = Vector2<short>();
+
+template<>
+Vector2<char> Vector2<char>::Zero = Vector2<char>();
