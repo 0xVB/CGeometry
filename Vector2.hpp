@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 #include "Geometry.hpp"
 
 #ifndef IFDEF_VECTOR2

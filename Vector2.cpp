@@ -1,101 +1,45 @@
-#include "Geometry.hpp"
-#define P template <typename T>
+#include "Vector2.h"
+#include "Vector3.h"
+#include "Rect.h"
+
+using namespace CGeometry;
 
 #pragma region Constructors
-P
-Vector2<T>::Vector2()
+Vector2::Vector2(float x, float y)
 {
-    X = 0;
-    Y = 0;
+	X = x;
+	Y = y;
 }
 
-P
-Vector2<T>::Vector2(T N)
+Vector2::Vector2(Vector3 Vector)
 {
-    X = N;
-    Y = N;
+	X = Vector.X;
+	Y = Vector.Y;
 }
 
-P
-Vector2<T>::Vector2(T _X, T _Y)
+Vector2::Vector2(Rect Rectangle)
 {
-    X = _X;
-    Y = _Y;
+    *this = Rectangle.Position;
 }
 
-P
-Vector2<T>::Vector2(Rect<T> R)
+Vector2 Vector2::FromAngle(float Angle, float Magnitude)
 {
-    X = R.X;
-    Y = R.Y;
-}
-
-P
-Vector2<T>::Vector2(Vector3<T> V3)
-{
-    X = V3.X;
-    Y = V3.Y;
-}
-#pragma endregion
-
-#pragma region Operators
-P
-Vector2<T> Vector2<T>::operator+(Vector2<T> Other)
-{
-    return Vector2<T>(X + Other.X, Y + Other.Y);
-}
-
-P
-Vector2<T> Vector2<T>::operator-(Vector2<T> Other)
-{
-    return Vector2<T>(X - Other.X, Y - Other.Y);
-}
-
-P
-Vector2<T> Vector2<T>::operator*(float F)
-{
-    return Vector2<T>(X * F, Y * F);
-}
-
-P
-Vector2<T> Vector2<T>::operator/(float F)
-{
-    return Vector2<T>(X / F, Y / F);
-}
-
-P
-void Vector2<T>::operator=(Vector2<T> Other)
-{
-    X = Other.X;
-    Y = Other.Y;
-}
-#pragma endregion
-
-#pragma region Converters
-P
-Vector2<T>::operator Vector3<T>()
-{
-    return Vector3<T>(X, Y, 0);
-}
-
-P
-Vector2<T>::operator Rect<T>()
-{
-    return Rect<T>(X, Y, 0, 0);
+    return Vector2(
+        cos(Angle) * Magnitude,
+        sin(Angle) * Magnitude
+    );
 }
 #pragma endregion
 
 #pragma region Methods
-P
-Vector2<T> Vector2<T>:: Rotate(float Rad)
+Vector2 Vector2::Rotate(float Rad)
 {
-    T NX = X * cos(Rad) - Y * sin(Rad);
-    T NY = X * sin(Rad) + Y * cos(Rad);
-    return Vector2<T>(NX, NY);
+    float NX = X * cos(Rad) - Y * sin(Rad);
+    float NY = X * sin(Rad) + Y * cos(Rad);
+    return Vector2(NX, NY);
 }
 
-P
-std::string Vector2<T>::ToString(bool B, bool C)
+std::string Vector2::ToString(bool B, bool C)
 {
     std::string Result = "";
     if (C) Result = "Vector2";
@@ -105,114 +49,214 @@ std::string Vector2<T>::ToString(bool B, bool C)
     return Result;
 }
 
-P
-float Vector2<T>::GetMagnitude()
+float Vector2::GetMagnitude()
 {
     return sqrt(X * X + Y * Y);
 }
 
-P
-Vector2<T> Vector2<T>::Cross(Vector2 Other)
+Vector2 Vector2::Cross(Vector2 Other)
 {
-    return Vector2<T>(Y * Other.Y, X * Other.X);
+    return Vector2(Y * Other.Y, X * Other.X);
 }
 
-P
-float Vector2<T>::Dot(Vector2 Other) {
+float Vector2::Dot(Vector2 Other) {
     return X * Other.X + Y * Other.Y;
 }
 
-P
-Vector2<T> Vector2<T>::Lerp(Vector2<T> Target, float Alpha)
+Vector2 Vector2::Lerp(Vector2 Target, float Alpha)
 {
-    return Vector2<T>(
+    return Vector2(
         X + (Target.X - X) * Alpha,
         Y + (Target.Y - Y) * Alpha
     );
 }
 
-P
-Vector2<T> Vector2<T>::Nudge(Vector2<T> Target, float Amount)
+Vector2 Vector2::Nudge(Vector2 Target, float Amount, bool DoClamp)
 {
     float MagDelta = Target.GetMagnitude() - GetMagnitude();
-    return Lerp(Target, Amount / MagDelta);
+    float Alpha = Amount / MagDelta;
+    if (DoClamp)
+        Alpha = Clamp(Alpha, -1, 1);
+
+    return Lerp(Target, Alpha);
 }
 
-P
-Vector2<T> Vector2<T>::SetMagnitude(float NewMag)
+Vector2 Vector2::SetMagnitude(float NewMag)
 {
-    auto Direction = Unit();
+    auto Direction = GetUnit();
     return Direction * NewMag;
 }
 
-P
-Vector2<T> Vector2<T>::Unit()
+Vector2 Vector2::GetUnit()
 {
     float Mag = GetMagnitude();
     if (Mag == 0) return Zero;
 
-    return Vector2<T>(
+    return Vector2(
         X / Mag,
         Y / Mag
     );
 }
 
-P
-Vector2<T> Vector2<T>::Normal(bool Clockwise)
+Vector2 Vector2::Normal(bool Clockwise)
 {
     if (Clockwise)
-        return Vector2<T>(
+        return Vector2(
             Y,
             -X
         );
 
-    return Vector2<T>(
+    return Vector2(
         -Y,
         X
     );
 }
 
-P
-Vector2<T> Vector2<T>::RadialLerp(Vector2<T> Target, float Alpha, bool LerpMagnitude) {
-    // Calculate the angle between this vector and the target vector
-    float Angle = atan2(Target.Y, Target.X) - atan2(Y, X);
-
-    // Ensure the angle is between -pi and pi
-    while (Angle > M_PI) Angle -= 2 * M_PI;
-    while (Angle <= -M_PI) Angle += 2 * M_PI;
-
-    // Interpolate the angle
-    float LerpedAngle = Angle * Alpha;
-
-    // Calculate the new direction vector
-    float NewX = cos(atan2(Y, X) + LerpedAngle);
-    float NewY = sin(atan2(Y, X) + LerpedAngle);
-
-    // Optionally interpolate the magnitude
-    if (LerpMagnitude)
-    {
-        float MagnitudeDifference = Target.GetMagnitude() - GetMagnitude();
-        float LerpedMagnitude = GetMagnitude() + MagnitudeDifference * Alpha;
-        return Vector2<T>(NewX * LerpedMagnitude, NewY * LerpedMagnitude);
-    }
+float Vector2::GetDirection(bool Clamp)
+{
+    if (Clamp)
+        return ClampAngle(atan2(Y, X));
     else
-    {
-        return Vector2<T>(NewX, NewY);
-    }
+        return atan2(Y, X);
+}
+
+Vector2 Vector2::SetDirection(float NewDir)
+{
+    float Magnitude = GetMagnitude();
+    return Vector2(
+        X * cos(NewDir),
+        Y * sin(NewDir)
+    );
+}
+
+Vector2 Vector2::SetUnit(Vector2 NewUnit)
+{
+    return NewUnit * GetMagnitude();
+}
+
+Vector2 Vector2::RadialLerp(Vector2 Target, float Alpha, bool LerpMagnitude)
+{
+    float MyDir = GetDirection(false);
+    float TDir = Target.GetDirection(false);
+    float DirDelta = ClampAngle(TDir - MyDir);
+    float NewDir = MyDir + DirDelta * Alpha;
+    float NewMag = GetMagnitude();
+
+    if (LerpMagnitude)
+        NewMag = NewMag + (Target.GetMagnitude() - NewMag) * Alpha;
+    return Vector2::FromAngle(NewDir, NewMag);
+}
+
+Vector2 Vector2::RadialNudge(Vector2 Target, float Amount, bool LerpMagnitude, bool DoClamp)
+{
+    float MyDir = GetDirection(false);
+    float TDir = Target.GetDirection(false);
+    float DirDelta = ClampAngle(TDir - MyDir);
+    float Alpha = Amount / DirDelta;
+    if (DoClamp) Alpha = Clamp(Alpha, -1, 1);
+    float NewDir = MyDir + DirDelta * Alpha;
+    float NewMag = MyDir;
+
+    if (LerpMagnitude)
+        NewMag = MyDir + (Target.GetMagnitude() - MyDir) * Alpha;
+    return Vector2::FromAngle(NewDir, NewMag);
 }
 #pragma endregion
 
-template<>
-Vector2<int> Vector2<int>::Zero = Vector2<int>();
+#pragma region Operators
+Vector2 Vector2::operator+(Vector2 Other)
+{
+    return Vector2(X + Other.X, Y + Other.Y);
+}
 
-template<>
-Vector2<float> Vector2<float>::Zero = Vector2<float>();
+Vector2 Vector2::operator-(Vector2 Other)
+{
+    return Vector2(X - Other.X, Y - Other.Y);
+}
 
-template<>
-Vector2<double> Vector2<double>::Zero = Vector2<double>();
+Vector2 Vector2::operator*(float F)
+{
+    return Vector2(X * F, Y * F);
+}
 
-template<>
-Vector2<short> Vector2<short>::Zero = Vector2<short>();
+Vector2 Vector2::operator/(float F)
+{
+    if (F == 0) return *this;
+    return Vector2(X / F, Y / F);
+}
 
-template<>
-Vector2<char> Vector2<char>::Zero = Vector2<char>();
+void Vector2::operator=(Vector2 Other)
+{
+    X = Other.X;
+    Y = Other.Y;
+}
+#pragma endregion
+
+#pragma region Converters
+Vector2::operator IVector2()
+{
+    return IVector2(X, Y);
+}
+
+Vector2::operator Vector3()
+{
+    return Vector3(X, Y, 0);
+}
+
+Vector2::operator IVector3()
+{
+    return IVector3(X, Y, 0);
+}
+
+Vector2::operator Rect()
+{
+    return Rect(X, Y, 0, 0);
+}
+
+Vector2::operator IRect()
+{
+    return IRect(X, Y, 0, 0);
+}
+#pragma endregion
+
+#pragma region IVector2
+IVector2::IVector2(int x, int y)
+{
+    X = x;
+    Y = y;
+}
+
+IVector2::IVector2(Vector2 Vec)
+{
+    X = Vec.X;
+    Y = Vec.Y;
+}
+
+IVector2::operator Vector2()
+{
+    return Vector2(X, Y);
+}
+
+IVector2::operator Vector3()
+{
+    return Vector3(X, Y, 0);
+}
+
+IVector2::operator IVector3()
+{
+    return IVector3(X, Y, 0);
+}
+
+IVector2::operator Rect()
+{
+    return Rect(X, Y, 0, 0);
+}
+
+IVector2::operator IRect()
+{
+    return IRect(X, Y, 0, 0);
+}
+#pragma endregion
+
+Vector2 Vector2::Zero = Vector2();
+IVector2 IVector2::Zero = IVector2();
